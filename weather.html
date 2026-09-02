@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+  <meta name="theme-color" content="#0b1220" />
+  <meta name="description"
+        content="Your day at a glance — time, weather, and calendar." />
+
+  <title>DayFlow</title>
+
+  <style>
+    :root {
+      --bg: #080d18;
+      --panel: #101827;
+      --panel-2: #151f30;
+      --border: #243147;
+      --text: #f4f7fb;
+      --muted: #8f9caf;
+      --accent: #62a8ff;
+      --accent-2: #7ce7c1;
+      --warning: #ffc857;
+      --danger: #ff7272;
+      --hour-width: 100px;
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    body {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    /* -----------------------------
+       App shell
+    ----------------------------- */
+
+    .app {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+
+      padding:
+        calc(14px + env(safe-area-inset-top))
+        20px
+        14px;
+
+      background: rgba(8, 13, 24, 0.92);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 11px;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(135deg, #62a8ff, #7ce7c1);
+      color: #07101c;
+      font-weight: 900;
+    }
+
+    .brand-title {
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-subtitle {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 9px 12px;
+    }
+
+    .btn:hover {
+      background: var(--panel-2);
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      color: #06101e;
+      border-color: transparent;
+      font-weight: 700;
+    }
+
+    /* -----------------------------
+       Date/location controls
+    ----------------------------- */
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .date-title {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .location {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 3px;
+    }
+
+    .toolbar-right {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* -----------------------------
+       Timeline
+    ----------------------------- */
+
+    .timeline-wrap {
+      flex: 1;
+      overflow-x: auto;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .timeline {
+      min-width: 850px;
+    }
+
+    .grid-header,
+    .hour-row {
+      display: grid;
+      grid-template-columns: 95px 1fr 1fr 1fr;
+    }
+
+    .grid-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .grid-header > div {
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-right: 1px solid var(--border);
+    }
+
+    .hour-row {
+      min-height: 96px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hour-row > div {
+      border-right: 1px solid var(--border);
+    }
+
+    .time-cell {
+      padding: 15px 12px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .time-cell.current {
+      color: var(--accent);
+    }
+
+    .weather-cell,
+    .plan-cell {
+      padding: 12px 14px;
+      position: relative;
+    }
+
+    /* -----------------------------
+       Weather
+    ----------------------------- */
+
+    .weather-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .weather-icon {
+      font-size: 30px;
+      width: 38px;
+      text-align: center;
+    }
+
+    .temperature {
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .weather-description {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .weather-details {
+      display: flex;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 8px;
+    }
+
+    .precip {
+      color: var(--accent-2);
+    }
+
+    /* -----------------------------
+       Calendar
+    ----------------------------- */
+
+    .event {
+      border-left: 4px solid var(--accent);
+      background: rgba(98, 168, 255, 0.12);
+      border-radius: 9px;
+      padding: 9px 10px;
+      margin-bottom: 6px;
+    }
+
+    .event:last-child {
+      margin-bottom: 0;
+    }
+
+    .event-title {
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .event-time {
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
+    .all-day {
+      border-left-color: var(--accent-2);
+      background: rgba(124, 231, 193, 0.10);
+    }
+
+    .empty {
+      color: #536176;
+      font-size: 12px;
+      padding-top: 6px;
+    }
+
+    /* -----------------------------
+       Current hour
+    ----------------------------- */
+
+    .hour-row.current-hour {
+      background:
+        linear-gradient(
+          90deg,
+          rgba(98,168,255,0.07),
+          rgba(98,168,255,0.015)
+        );
+    }
+
+    .hour-row.current-hour .time-cell {
+      position: relative;
+    }
+
+    .hour-row.current-hour .time-cell::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--accent);
+    }
+
+    /* -----------------------------
+       Setup modal
+    ----------------------------- */
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+
+      display: none;
+      align-items: center;
+      justify-content: center;
+
+      padding: 20px;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal {
+      width: min(520px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+    }
+
+    .modal h2 {
+      margin: 0 0 8px;
+    }
+
+    .modal p {
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .field {
+      margin: 18px 0;
+    }
+
+    .field label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 7px;
+    }
+
+    .field input {
+      width: 100%;
+      background: #0b1220;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 11px 12px;
+      outline: none;
+    }
+
+    .field input:focus {
+      border-color: var(--accent);
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    /* -----------------------------
+       Status
+    ----------------------------- */
+
+    .status {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 200;
+
+      max-width: 340px;
+      padding: 11px 14px;
+
+      background: #121c2c;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+
+      color: var(--muted);
+      font-size: 12px;
+
+      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: .2s ease;
+    }
+
+    .status.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* -----------------------------
+       Mobile
+    ----------------------------- */
+
+    @media (max-width: 700px) {
+      header {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .brand-subtitle {
+        display: none;
+      }
+
+      .toolbar {
+        padding: 12px 14px;
+      }
+
+      .date-title {
+        font-size: 20px;
+      }
+
+      .timeline {
+        min-width: 760px;
+      }
+
+      .grid-header,
+      .hour-row {
+        grid-template-columns: 75px 1fr 1fr 1fr;
+      }
+
+      .weather-cell,
+      .plan-cell {
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark">D</div>
+
+      <div>
+        <div class="brand-title">DayFlow</div>
+        <div class="brand-subtitle">
+          Your day, weather, and plans in one view
+        </div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn" id="refreshBtn">
+        Refresh
+      </button>
+
+      <button class="btn primary" id="calendarBtn">
+        Connect Calendar
+      </button>
+    </div>
+  </header>
+
+
+  <div class="toolbar">
+
+    <div>
+      <div class="date-title" id="dateTitle">
+        Today
+      </div>
+
+      <div class="location" id="locationLabel">
+        Finding your location…
+      </div>
+    </div>
+
+    <div class="toolbar-right">
+      <button class="btn" id="prevDay">←</button>
+      <button class="btn" id="todayBtn">Today</button>
+      <button class="btn" id="nextDay">→</button>
+    </div>
+
+  </div>
+
+
+  <main class="timeline-wrap">
+    <div class="timeline">
+
+      <div class="grid-header">
+        <div>Time</div>
+        <div>Weather</div>
+        <div>Conditions</div>
+        <div>Plan</div>
+      </div>
+
+      <div id="hours"></div>
+
+    </div>
+  </main>
+
+</div>
+
+
+<div class="modal-backdrop" id="setupModal">
+
+  <div class="modal">
+
+    <h2>Connect Google Calendar</h2>
+
+    <p>
+      Enter your Google OAuth Client ID below. The application only requests
+      read-only calendar access.
+    </p>
+
+    <div class="field">
+
+      <label for="clientId">
+        Google OAuth Client ID
+      </label>
+
+      <input
+        id="clientId"
+        type="text"
+        placeholder="1234567890-abc123.apps.googleusercontent.com"
+      />
+
+    </div>
+
+    <div class="modal-actions">
+
+      <button class="btn" id="cancelSetup">
+        Cancel
+      </button>
+
+      <button class="btn primary" id="saveClientId">
+        Save & Connect
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<div class="status" id="status"></div>
+
+
+<!-- Google API client -->
+<script src="https://apis.google.com/js/api.js"></script>
+
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client"></script>
+
+
+<script>
+/* ============================================================
+   CONFIGURATION
+   ============================================================ */
+
+const CONFIG = {
+
+  // Open-Meteo
+  WEATHER_API:
+    "https://api.open-meteo.com/v1/forecast",
+
+  // Google Calendar
+  GOOGLE_DISCOVERY_DOC:
+    "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest",
+
+  GOOGLE_SCOPE:
+    "https://www.googleapis.com/auth/calendar.readonly",
+
+  GOOGLE_CLIENT_ID:
+    localStorage.getItem("googleClientId") || "",
+
+};
+
+
+/* ============================================================
+   STATE
+   ============================================================ */
+
+const state = {
+
+  date: new Date(),
+
+  latitude: null,
+  longitude: null,
+
+  weather: null,
+
+  events: [],
+
+  accessToken: null,
+
+  tokenClient: null,
+
+  gapiReady: false,
+
+  gisReady: false,
+
+};
+
+
+/* ============================================================
+   DOM
+   ============================================================ */
+
+const $ = id => document.getElementById(id);
+
+const hoursEl = $("hours");
+const dateTitleEl = $("dateTitle");
+const locationLabelEl = $("locationLabel");
+const statusEl = $("status");
+
+
+/* ============================================================
+   STATUS
+   ============================================================ */
+
+let statusTimer;
+
+function showStatus(message) {
+
+  statusEl.textContent = message;
+  statusEl.classList.add("show");
+
+  clearTimeout(statusTimer);
+
+  statusTimer = setTimeout(() => {
+    statusEl.classList.remove("show");
+  }, 3500);
+}
+
+
+/* ============================================================
+   DATE HELPERS
+   ============================================================ */
+
+function startOfDay(date) {
+
+  const d = new Date(date);
+
+  d.setHours(0, 0, 0, 0);
+
+  return d;
+}
+
+
+function endOfDay(date) {
+
+  const d = startOfDay(date);
+
+  d.setDate(d.getDate() + 1);
+
+  return d;
+}
+
+
+function dateKey(date) {
+
+  const y = date.getFullYear();
+
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+
+  const d = String(date.getDate()).padStart(2, "0");
+
+  return `${y}-${m}-${d}`;
+}
+
+
+function formatDate(date) {
+
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric"
+  }).format(date);
+
+}
+
+
+function formatHour(hour) {
+
+  const d = new Date();
+
+  d.setHours(hour, 0, 0, 0);
+
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "numeric"
+  }).format(d);
+
+}
+
+
+/* ============================================================
+   LOCATION
+   ============================================================ */
+
+async function getLocation() {
+
+  return new Promise((resolve, reject) => {
+
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation is not supported."));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+
+      position => {
+
+        state.latitude =
+          position.coords.latitude;
+
+        state.longitude =
+          position.coords.longitude;
+
+        resolve(position.coords);
+
+      },
+
+      error => reject(error),
+
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 15 * 60 * 1000
+      }
+
+    );
+
+  });
+
+}
+
+
+/* ============================================================
+   WEATHER
+   ============================================================ */
+
+async function loadWeather() {
+
+  if (
+    state.latitude === null ||
+    state.longitude === null
+  ) {
+    throw new Error("Location unavailable.");
+  }
+
+  const url = new URL(CONFIG.WEATHER_API);
+
+  url.searchParams.set(
+    "latitude",
+    state.latitude
+  );
+
+  url.searchParams.set(
+    "longitude",
+    state.longitude
+  );
+
+  url.searchParams.set(
+    "hourly",
+    [
+      "temperature_2m",
+      "apparent_temperature",
+      "precipitation_probability",
+      "precipitation",
+      "weather_code",
+      "wind_speed_10m"
+    ].join(",")
+  );
+
+  url.searchParams.set(
+    "temperature_unit",
+    "fahrenheit"
+  );
+
+  url.searchParams.set(
+    "wind_speed_unit",
+    "mph"
+  );
+
+  url.searchParams.set(
+    "timezone",
+    "auto"
+  );
+
+  url.searchParams.set(
+    "forecast_days",
+    "7"
+  );
+
+  const response =
+    await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(
+      `Weather request failed: ${response.status}`
+    );
+  }
+
+  state.weather =
+    await response.json();
+
+}
+
+
+/* ============================================================
+   WEATHER INTERPRETATION
+   ============================================================ */
+
+function weatherDescription(code) {
+
+  const map = {
+
+    0: ["☀️", "Clear"],
+
+    1: ["🌤️", "Mostly clear"],
+    2: ["⛅", "Partly cloudy"],
+    3: ["☁️", "Cloudy"],
+
+    45: ["🌫️", "Fog"],
+    48: ["🌫️", "Fog"],
+
+    51: ["🌦️", "Light drizzle"],
+    53: ["🌦️", "Drizzle"],
+    55: ["🌧️", "Heavy drizzle"],
+
+    61: ["🌦️", "Light rain"],
+    63: ["🌧️", "Rain"],
+    65: ["🌧️", "Heavy rain"],
+
+    71: ["🌨️", "Light snow"],
+    73: ["❄️", "Snow"],
+    75: ["❄️", "Heavy snow"],
+
+    80: ["🌦️", "Rain showers"],
+    81: ["🌧️", "Rain showers"],
+    82: ["⛈️", "Heavy showers"],
+
+    95: ["⛈️", "Thunderstorm"],
+    96: ["⛈️", "Thunderstorm"],
+    99: ["⛈️", "Thunderstorm"]
+
+  };
+
+  return map[code] || ["🌡️", "Unknown"];
+
+}
+
+
+/* ============================================================
+   WEATHER FOR HOUR
+   ============================================================ */
+
+function weatherForHour(hour) {
+
+  if (!state.weather?.hourly) {
+    return null;
+  }
+
+  const date = dateKey(state.date);
+
+  const target =
+    `${date}T${String(hour).padStart(2, "0")}:00`;
+
+  const index =
+    state.weather.hourly.time.indexOf(target);
+
+  if (index === -1) {
+    return null;
+  }
+
+  return {
+
+    temperature:
+      state.weather.hourly.temperature_2m[index],
+
+    apparent:
+      state.weather.hourly.apparent_temperature[index],
+
+    precipitationProbability:
+      state.weather.hourly
+        .precipitation_probability[index],
+
+    precipitation:
+      state.weather.hourly
+        .precipitation[index],
+
+    weatherCode:
+      state.weather.hourly
+        .weather_code[index],
+
+    wind:
+      state.weather.hourly
+        .wind_speed_10m[index]
+
+  };
+
+}
+
+
+/* ============================================================
+   GOOGLE CALENDAR
+   ============================================================ */
+
+function initializeGoogle() {
+
+  if (
+    typeof gapi === "undefined" ||
+    typeof google === "undefined"
+  ) {
+    return;
+  }
+
+  gapi.load("client", async () => {
+
+    await gapi.client.init({
+      discoveryDocs: [
+        CONFIG.GOOGLE_DISCOVERY_DOC
+      ]
+    });
+
+    state.gapiReady = true;
+
+    if (CONFIG.GOOGLE_CLIENT_ID) {
+
+      initializeGoogleIdentity();
+
+    }
+
+  });
+
+}
+
+
+function initializeGoogleIdentity() {
+
+  if (
+    !CONFIG.GOOGLE_CLIENT_ID ||
+    typeof google === "undefined"
+  ) {
+    return;
+  }
+
+  state.tokenClient =
+    google.accounts.oauth2.initTokenClient({
+
+      client_id:
+        CONFIG.GOOGLE_CLIENT_ID,
+
+      scope:
+        CONFIG.GOOGLE_SCOPE,
+
+      callback: "",
+
+    });
+
+  state.gisReady = true;
+
+}
+
+
+/* ============================================================
+   GOOGLE AUTH
+   ============================================================ */
+
+async function connectCalendar() {
+
+  if (!CONFIG.GOOGLE_CLIENT_ID) {
+
+    $("setupModal").classList.add("open");
+
+    return;
+
+  }
+
+  if (!state.gapiReady) {
+
+    showStatus(
+      "Google API is still loading. Try again."
+    );
+
+    return;
+
+  }
+
+  if (!state.tokenClient) {
+
+    initializeGoogleIdentity();
+
+  }
+
+  state.tokenClient.callback =
+    async response => {
+
+      if (response.error) {
+
+        console.error(response);
+
+        showStatus(
+          "Google authorization failed."
+        );
+
+        return;
+
+      }
+
+      state.accessToken =
+        response.access_token;
+
+      $("calendarBtn").textContent =
+        "Calendar Connected";
+
+      await loadCalendar();
+
+    };
+
+
+  state.tokenClient.requestAccessToken({
+    prompt: "consent"
+  });
+
+}
+
+
+/* ============================================================
+   CALENDAR DATA
+   ============================================================ */
+
+async function loadCalendar() {
+
+  if (!state.accessToken) {
+    return;
+  }
+
+  const timeMin =
+    startOfDay(state.date).toISOString();
+
+  const timeMax =
+    endOfDay(state.date).toISOString();
+
+  try {
+
+    const response =
+      await gapi.client.calendar.events.list({
+
+        calendarId: "primary",
+
+        timeMin,
+
+        timeMax,
+
+        singleEvents: true,
+
+        orderBy: "startTime",
+
+        maxResults: 100
+
+      });
+
+
+    state.events =
+      response.result.items || [];
+
+    render();
+
+  } catch (error) {
+
+    console.error(error);
+
+    showStatus(
+      "Unable to load Google Calendar."
+    );
+
+  }
+
+}
+
+
+/* ============================================================
+   CALENDAR HELPERS
+   ============================================================ */
+
+function eventStart(event) {
+
+  return (
+    event.start?.dateTime ||
+    event.start?.date
+  );
+
+}
+
+
+function eventEnd(event) {
+
+  return (
+    event.end?.dateTime ||
+    event.end?.date
+  );
+
+}
+
+
+function eventIsAllDay(event) {
+
+  return Boolean(event.start?.date);
+
+}
+
+
+function eventsForHour(hour) {
+
+  const rowStart =
+    new Date(state.date);
+
+  rowStart.setHours(hour, 0, 0, 0);
+
+  const rowEnd =
+    new Date(rowStart);
+
+  rowEnd.setHours(hour + 1);
+
+
+  return state.events.filter(event => {
+
+    if (eventIsAllDay(event)) {
+      return true;
+    }
+
+    const start =
+      new Date(eventStart(event));
+
+    const end =
+      new Date(eventEnd(event));
+
+    return (
+      start < rowEnd &&
+      end > rowStart
+    );
+
+  });
+
+}
+
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+
+function render() {
+
+  dateTitleEl.textContent =
+    formatDate(state.date);
+
+  hoursEl.innerHTML = "";
+
+
+  for (let hour = 0; hour < 24; hour++) {
+
+    const row =
+      document.createElement("div");
+
+    row.className =
+      "hour-row";
+
+
+    const now =
+      new Date();
+
+    const isCurrentHour =
+      dateKey(now) === dateKey(state.date) &&
+      now.getHours() === hour;
+
+
+    if (isCurrentHour) {
+      row.classList.add("current-hour");
+    }
+
+
+    /* TIME */
+
+    const timeCell =
+      document.createElement("div");
+
+    timeCell.className =
+      "time-cell" +
+      (isCurrentHour ? " current" : "");
+
+    timeCell.textContent =
+      formatHour(hour);
+
+
+    /* WEATHER */
+
+    const weatherCell =
+      document.createElement("div");
+
+    weatherCell.className =
+      "weather-cell";
+
+    const weather =
+      weatherForHour(hour);
+
+
+    if (weather) {
+
+      const [
+        icon,
+        description
+      ] =
+        weatherDescription(
+          weather.weatherCode
+        );
+
+
+      weatherCell.innerHTML = `
+
+        <div class="weather-main">
+
+          <div class="weather-icon">
+            ${icon}
+          </div>
+
+          <div>
+
+            <div class="temperature">
+              ${Math.round(weather.temperature)}°
+            </div>
+
+            <div class="weather-description">
+              ${description}
+            </div>
+
+          </div>
+
+        </div>
+
+      `;
+
+    } else {
+
+      weatherCell.innerHTML =
+        `<div class="empty">
+          Weather unavailable
+        </div>`;
+
+    }
+
+
+    /* CONDITIONS */
+
+    const conditionsCell =
+      document.createElement("div");
+
+    conditionsCell.className =
+      "weather-cell";
+
+
+    if (weather) {
+
+      conditionsCell.innerHTML = `
+
+        <div class="weather-description">
+          Feels like
+          ${Math.round(weather.apparent)}°
+        </div>
+
+        <div class="weather-details">
+
+          <span class="precip">
+            💧 ${weather.precipitationProbability ?? 0}%
+          </span>
+
+          <span>
+            ${weather.wind ?? 0} mph
+          </span>
+
+        </div>
+
+      `;
+
+    }
+
+
+    /* PLAN */
+
+    const planCell =
+      document.createElement("div");
+
+    planCell.className =
+      "plan-cell";
+
+
+    const events =
+      eventsForHour(hour);
+
+
+    if (events.length === 0) {
+
+      planCell.innerHTML =
+        `<div class="empty">Open</div>`;
+
+    } else {
+
+      events.forEach(event => {
+
+        const eventEl =
+          document.createElement("div");
+
+        eventEl.className =
+          "event" +
+          (eventIsAllDay(event)
+            ? " all-day"
+            : "");
+
+
+        let timeText =
+          "All day";
+
+
+        if (!eventIsAllDay(event)) {
+
+          const start =
+            new Date(eventStart(event));
+
+          const end =
+            new Date(eventEnd(event));
+
+
+          timeText =
+            `${start.toLocaleTimeString([], {
+              hour: "numeric",
+              minute: "2-digit"
+            })} – ${end.toLocaleTimeString([], {
+              hour: "numeric",
+              minute: "2-digit"
+            })}`;
+
+        }
+
+
+        eventEl.innerHTML = `
+
+          <div class="event-title">
+            ${escapeHtml(
+              event.summary || "Untitled event"
+            )}
+          </div>
+
+          <div class="event-time">
+            ${timeText}
+          </div>
+
+        `;
+
+
+        planCell.appendChild(eventEl);
+
+      });
+
+    }
+
+
+    row.appendChild(timeCell);
+    row.appendChild(weatherCell);
+    row.appendChild(conditionsCell);
+    row.appendChild(planCell);
+
+    hoursEl.appendChild(row);
+
+  }
+
+}
+
+
+/* ============================================================
+   SECURITY
+   ============================================================ */
+
+function escapeHtml(value) {
+
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
+
+
+/* ============================================================
+   REFRESH
+   ============================================================ */
+
+async function refresh() {
+
+  try {
+
+    showStatus("Refreshing…");
+
+    await loadWeather();
+
+    if (state.accessToken) {
+      await loadCalendar();
+    }
+
+    render();
+
+    showStatus("Updated.");
+
+  } catch (error) {
+
+    console.error(error);
+
+    showStatus(
+      "Couldn't refresh weather/location."
+    );
+
+    render();
+
+  }
+
+}
+
+
+/* ============================================================
+   DATE NAVIGATION
+   ============================================================ */
+
+$("prevDay").addEventListener(
+  "click",
+  async () => {
+
+    state.date.setDate(
+      state.date.getDate() - 1
+    );
+
+    render();
+
+    if (state.accessToken) {
+      await loadCalendar();
+    }
+
+  }
+);
+
+
+$("nextDay").addEventListener(
+  "click",
+  async () => {
+
+    state.date.setDate(
+      state.date.getDate() + 1
+    );
+
+    render();
+
+    if (state.accessToken) {
+      await loadCalendar();
+    }
+
+  }
+);
+
+
+$("todayBtn").addEventListener(
+  "click",
+  async () => {
+
+    state.date = new Date();
+
+    render();
+
+    if (state.accessToken) {
+      await loadCalendar();
+    }
+
+  }
+);
+
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
+$("refreshBtn").addEventListener(
+  "click",
+  refresh
+);
+
+
+$("calendarBtn").addEventListener(
+  "click",
+  connectCalendar
+);
+
+
+$("cancelSetup").addEventListener(
+  "click",
+  () => {
+    $("setupModal").classList.remove("open");
+  }
+);
+
+
+$("saveClientId").addEventListener(
+  "click",
+  async () => {
+
+    const clientId =
+      $("clientId").value.trim();
+
+    if (!clientId) {
+
+      showStatus(
+        "Enter a Google OAuth Client ID."
+      );
+
+      return;
+
+    }
+
+    localStorage.setItem(
+      "googleClientId",
+      clientId
+    );
+
+    CONFIG.GOOGLE_CLIENT_ID =
+      clientId;
+
+    $("setupModal")
+      .classList.remove("open");
+
+    initializeGoogleIdentity();
+
+    await connectCalendar();
+
+  }
+);
+
+
+/* ============================================================
+   STARTUP
+   ============================================================ */
+
+async function init() {
+
+  render();
+
+  initializeGoogle();
+
+  try {
+
+    await getLocation();
+
+    locationLabelEl.textContent =
+      `${state.latitude.toFixed(2)}°, ` +
+      `${state.longitude.toFixed(2)}°`;
+
+    await loadWeather();
+
+    render();
+
+  } catch (error) {
+
+    console.error(error);
+
+    locationLabelEl.textContent =
+      "Location unavailable";
+
+    showStatus(
+      "Please allow location access."
+    );
+
+  }
+
+}
+
+
+/* ============================================================
+   PWA SERVICE WORKER
+   ============================================================ */
+
+/*
+  A service worker cannot be registered from a file:// URL.
+
+  When this HTML is served from HTTPS, we can dynamically create
+  a service worker and register it.
+
+  For a real deployment, I recommend moving the worker into
+  service-worker.js. Keeping it here is useful during the
+  single-file prototype phase.
+*/
+
+if ("serviceWorker" in navigator &&
+    location.protocol !== "file:") {
+
+  const swCode = `
+
+    const CACHE = "dayflow-v1";
+
+    self.addEventListener("install", event => {
+
+      self.skipWaiting();
+
+    });
+
+
+    self.addEventListener("activate", event => {
+
+      event.waitUntil(
+        self.clients.claim()
+      );
+
+    });
+
+
+    self.addEventListener("fetch", event => {
+
+      /*
+        Network-first is intentional because weather and
+        calendar information should be fresh.
+      */
+
+      event.respondWith(
+
+        fetch(event.request)
+          .catch(() =>
+            caches.match(event.request)
+          )
+
+      );
+
+    });
+
+  `;
+
+
+  const blob =
+    new Blob(
+      [swCode],
+      { type: "text/javascript" }
+    );
+
+
+  const swUrl =
+    URL.createObjectURL(blob);
+
+
+  /*
+    Some browsers restrict blob-based service workers.
+    This is why production should use a normal
+    service-worker.js file.
+  */
+
+  navigator.serviceWorker
+    .register(swUrl)
+    .catch(error =>
+      console.warn(
+        "Service worker registration failed:",
+        error
+      )
+    );
+
+}
+
+
+init();
+
+</script>
+
+</body>
+</html>
