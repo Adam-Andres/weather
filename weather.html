@@ -109,18 +109,39 @@
 
     <!-- DATE -->
 
-    <div class="control-group">
+    <!-- ---------------- DATE NAVIGATION ---------------- -->
 
-      <label for="datePicker">
-        Day
-      </label>
+<div class="control-group date-navigation">
 
-      <input
-        type="date"
-        id="datePicker"
-      />
+  <button
+    type="button"
+    class="secondary date-arrow"
+    onclick="changeDay(-1)"
+    aria-label="Previous day"
+    title="Previous day"
+  >
+    ←
+  </button>
 
-    </div>
+  <label for="datePicker">Day</label>
+
+  <input
+    type="date"
+    id="datePicker"
+  />
+
+  <button
+    type="button"
+    class="secondary date-arrow"
+    onclick="changeDay(1)"
+    aria-label="Next day"
+    title="Next day"
+  >
+    →
+  </button>
+
+</div>
+
 
 
     <!-- ZIP CODE -->
