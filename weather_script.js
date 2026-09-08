@@ -1157,29 +1157,31 @@ function changeDay(direction) {
   const datePicker =
     document.getElementById("datePicker");
 
-  // Make sure a date exists.
-  if (!datePicker.value) {
+  if (!datePicker) {
+    console.error("datePicker was not found.");
     return;
   }
 
-  // Create a local date from the selected date.
+  if (!datePicker.value) {
+    console.error("No date is currently selected.");
+    return;
+  }
+
   const currentDate =
     new Date(datePicker.value + "T00:00:00");
 
-  // Move one day forward or backward.
   currentDate.setDate(
     currentDate.getDate() + direction
   );
 
-  // Put the new date into the date picker.
   datePicker.value =
     formatDateInput(currentDate);
 
-  // Manually trigger the existing date-change event.
   datePicker.dispatchEvent(
     new Event("change")
   );
 }
+
 
 
 
