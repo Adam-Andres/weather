@@ -230,36 +230,21 @@
       box-shadow: var(--shadow);
     }
 
-    /* ============================================================
-   CHANGE #1 — COLUMN LABEL POSITION
-   Prevents the Time / Weather / Plan labels from sticking
-   directly against the Midnight row.
-   ============================================================ */
-
-.column-headings {
-  display: grid;
-  grid-template-columns: 150px 280px minmax(300px, 1fr);
-  background: #f9fafb;
-  border-bottom: 1px solid var(--border);
-
-  position: sticky;
-
-  /* OLD:
-     top: 67px;
-  */
-
-  top: 68px;
-
-  z-index: 10;
-}
-
+    .column-headings {
+      display: grid;
+      grid-template-columns: 150px 280px minmax(300px, 1fr);
+      background: #f9fafb;
+      border-bottom: 1px solid var(--border);
+      position: static;
+      z-index: 10;
+    }
 
     .column-heading {
       padding: 13px 16px;
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: .07em;
-      font-weight: 750;
+      font-weight: 750;F
       color: var(--muted);
       border-right: 1px solid var(--border);
     }
@@ -268,23 +253,12 @@
       border-right: 0;
     }
 
-    /* ============================================================
-   CHANGE #2 — MIDNIGHT / FIRST ROW SPACING
-   Adds a small visual separation between the column labels
-   and the first 12:00 AM row.
-   ============================================================ */
-
-.hour-row {
-  display: grid;
-  grid-template-columns: 150px 280px minmax(300px, 1fr);
-  min-height: 86px;
-  border-bottom: 1px solid var(--border);
-
-  /* Keeps the first row visually separated from the
-     sticky column heading. */
-  scroll-margin-top: 80px;
-}
-
+    .hour-row {
+      display: grid;
+      grid-template-columns: 150px 280px minmax(300px, 1fr);
+      min-height: 86px;
+      border-bottom: 1px solid var(--border);
+    }
 
     .hour-row:last-child {
       border-bottom: 0;
