@@ -1152,36 +1152,35 @@ async function refreshPlanner() {
    DATE NAVIGATION
 ------------------------------------------------------------ */
 
-async function changeDay(direction) {
+function changeDay(direction) {
 
   const datePicker =
     document.getElementById("datePicker");
 
+  // Make sure a date exists.
   if (!datePicker.value) {
     return;
   }
 
-  // Convert the selected date into a local date.
+  // Create a local date from the selected date.
   const currentDate =
     new Date(datePicker.value + "T00:00:00");
 
-  // Move forward or backward one day.
+  // Move one day forward or backward.
   currentDate.setDate(
     currentDate.getDate() + direction
   );
 
-  // Update the date picker.
+  // Put the new date into the date picker.
   datePicker.value =
     formatDateInput(currentDate);
 
-  // Redraw the planner immediately.
-  renderPlanner();
-
-  // Load weather/calendar information for the new date.
-  if (accessToken) {
-    await loadCalendarEvents();
-  }
+  // Manually trigger the existing date-change event.
+  datePicker.dispatchEvent(
+    new Event("change")
+  );
 }
+
 
 
 
