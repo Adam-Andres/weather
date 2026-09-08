@@ -2,7 +2,7 @@
   "name": "Basic Planner",
   "short_name": "Planner",
   "description": "Time, weather, and Google Calendar in one simple planner.",
-  "start_url": "./index.html",
+  "start_url": "/weather/weather.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
