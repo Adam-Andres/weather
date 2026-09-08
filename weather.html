@@ -1,1197 +1,1444 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-  />
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-  <meta name="theme-color" content="#0f172a" />
-  <meta name="description" content="Hourly day planner with weather and Google Calendar." />
+<title>DayFlow</title>
 
-  <title>DayFlow</title>
+<style>
+  :root {
+    --bg: #0b1020;
+    --panel: #11182b;
+    --panel-2: #172038;
+    --border: rgba(255,255,255,.09);
+    --text: #f4f7fb;
+    --muted: #93a0b7;
+    --accent: #6ea8fe;
+    --accent-2: #7cdbb6;
+    --warning: #ffd166;
+    --danger: #ff6b6b;
+    --hour-height: 74px;
+  }
 
-  <style>
-    :root {
-      --bg: #f1f5f9;
-      --panel: #ffffff;
-      --panel-soft: #f8fafc;
-      --border: #e2e8f0;
-      --text: #0f172a;
-      --muted: #64748b;
-      --accent: #2563eb;
-      --accent-soft: #dbeafe;
-      --green: #16a34a;
-      --yellow: #ca8a04;
-      --red: #dc2626;
-      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-      --radius: 18px;
-    }
+  * {
+    box-sizing: border-box;
+  }
 
-    * {
-      box-sizing: border-box;
-    }
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family:
+      Inter, ui-sans-serif, system-ui, -apple-system,
+      BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
 
-    html,
-    body {
-      margin: 0;
-      padding: 0;
-      min-height: 100%;
-      font-family:
-        Inter,
-        ui-sans-serif,
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
+  body {
+    min-height: 100vh;
+  }
 
-    body {
-      padding-bottom: env(safe-area-inset-bottom);
-    }
+  button,
+  input {
+    font: inherit;
+  }
 
-    button,
-    input {
-      font: inherit;
-    }
+  button {
+    cursor: pointer;
+  }
 
-    button {
-      cursor: pointer;
-    }
+  .app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
 
-    /* ----------------------------------------
-       HEADER
-    ---------------------------------------- */
+  /* ---------------- HEADER ---------------- */
 
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+
+    padding:
+      max(14px, env(safe-area-inset-top))
+      20px
+      14px;
+
+    background: rgba(11,16,32,.92);
+    backdrop-filter: blur(18px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+
+    display: grid;
+    place-items: center;
+
+    background: linear-gradient(
+      135deg,
+      #6ea8fe,
+      #7cdbb6
+    );
+
+    color: #08101e;
+    font-weight: 900;
+    font-size: 19px;
+  }
+
+  .brand h1 {
+    margin: 0;
+    font-size: 19px;
+  }
+
+  .brand p {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .icon-button,
+  .primary-button,
+  .secondary-button {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 13px;
+    background: var(--panel);
+    color: var(--text);
+  }
+
+  .primary-button {
+    background: var(--accent);
+    color: #07101e;
+    border-color: transparent;
+    font-weight: 700;
+  }
+
+  .secondary-button:hover,
+  .icon-button:hover {
+    background: var(--panel-2);
+  }
+
+  /* ---------------- CONTROLS ---------------- */
+
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    padding: 14px 20px;
+
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .date-button {
+    min-width: 210px;
+    text-align: center;
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 15px;
+    font-weight: 700;
+  }
+
+  /* ---------------- MAIN GRID ---------------- */
+
+  .planner {
+    flex: 1;
+
+    display: grid;
+    grid-template-columns:
+      90px
+      minmax(210px, 0.8fr)
+      minmax(300px, 1.4fr);
+
+    min-width: 680px;
+  }
+
+  .column {
+    border-right: 1px solid var(--border);
+  }
+
+  .column:last-child {
+    border-right: none;
+  }
+
+  .column-header {
+    height: 48px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 15px;
+
+    position: sticky;
+    top: 70px;
+    z-index: 10;
+
+    background: rgba(17,24,43,.96);
+    backdrop-filter: blur(12px);
+
+    border-bottom: 1px solid var(--border);
+
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .timeline {
+    position: relative;
+  }
+
+  .hour {
+    height: var(--hour-height);
+    border-bottom: 1px solid var(--border);
+
+    position: relative;
+  }
+
+  .hour.current {
+    background: rgba(110,168,254,.055);
+  }
+
+  .time-cell {
+    padding: 12px 10px;
+    text-align: right;
+  }
+
+  .time-label {
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .time-sub {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  /* ---------------- WEATHER ---------------- */
+
+  .weather-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 9px 15px;
+  }
+
+  .weather-icon {
+    width: 38px;
+    text-align: center;
+    font-size: 26px;
+  }
+
+  .weather-temp {
+    font-size: 17px;
+    font-weight: 800;
+  }
+
+  .weather-details {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .weather-loading {
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  /* ---------------- CALENDAR ---------------- */
+
+  .plan-cell {
+    padding: 8px 12px;
+  }
+
+  .event {
+    min-height: 54px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    padding: 9px 11px;
+
+    border-radius: 9px;
+
+    background: rgba(124,219,182,.10);
+    border-left: 3px solid var(--accent-2);
+  }
+
+  .event + .event {
+    margin-top: 6px;
+  }
+
+  .event-title {
+    font-size: 13px;
+    font-weight: 750;
+  }
+
+  .event-time {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .free {
+    padding: 14px 10px;
+    color: rgba(147,160,183,.45);
+    font-size: 12px;
+  }
+
+  /* ---------------- SETTINGS ---------------- */
+
+  dialog {
+    width: min(500px, calc(100vw - 30px));
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 0;
+
+    background: var(--panel);
+    color: var(--text);
+
+    box-shadow: 0 30px 100px rgba(0,0,0,.55);
+  }
+
+  dialog::backdrop {
+    background: rgba(0,0,0,.65);
+    backdrop-filter: blur(4px);
+  }
+
+  .dialog-content {
+    padding: 22px;
+  }
+
+  .dialog-content h2 {
+    margin: 0 0 8px;
+  }
+
+  .dialog-content p {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  label {
+    display: block;
+    margin-top: 18px;
+    margin-bottom: 7px;
+
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  input[type="text"],
+  input[type="date"] {
+    width: 100%;
+    padding: 11px 12px;
+
+    border: 1px solid var(--border);
+    border-radius: 9px;
+
+    background: var(--bg);
+    color: var(--text);
+
+    outline: none;
+  }
+
+  input:focus {
+    border-color: var(--accent);
+  }
+
+  .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 22px;
+  }
+
+  .status {
+    margin-top: 12px;
+    min-height: 18px;
+    font-size: 12px;
+  }
+
+  .status.success {
+    color: var(--accent-2);
+  }
+
+  .status.error {
+    color: var(--danger);
+  }
+
+  /* ---------------- EMPTY STATE ---------------- */
+
+  .empty {
+    padding: 50px 25px;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  /* ---------------- MOBILE ---------------- */
+
+  @media (max-width: 720px) {
     header {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background: rgba(15, 23, 42, 0.96);
-      color: white;
-      backdrop-filter: blur(16px);
-      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.15);
+      padding-left: 13px;
+      padding-right: 13px;
     }
 
-    .header-inner {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
+    .brand p {
+      display: none;
     }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-width: 0;
-    }
-
-    .brand-icon {
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(135deg, #2563eb, #7c3aed);
-      font-size: 22px;
-    }
-
-    .brand-text h1 {
-      margin: 0;
-      font-size: 19px;
-      line-height: 1.1;
-    }
-
-    .brand-text p {
-      margin: 4px 0 0;
-      color: #94a3b8;
-      font-size: 12px;
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn {
-      border: 0;
-      border-radius: 10px;
-      padding: 9px 13px;
-      font-weight: 600;
-      font-size: 13px;
-      transition: 0.15s ease;
-    }
-
-    .btn:hover {
-      transform: translateY(-1px);
-    }
-
-    .btn-primary {
-      background: #2563eb;
-      color: white;
-    }
-
-    .btn-secondary {
-      background: #334155;
-      color: white;
-    }
-
-    .btn-light {
-      background: white;
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-
-    /* ----------------------------------------
-       CONTROLS
-    ---------------------------------------- */
 
     .controls {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 18px 20px 8px;
-    }
-
-    .control-panel {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 15px;
-      display: flex;
-      align-items: center;
       justify-content: space-between;
-      gap: 14px;
-      flex-wrap: wrap;
+      padding: 10px;
     }
 
-    .date-navigation {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .date-button {
+      min-width: 0;
+      flex: 1;
     }
 
-    .date-display {
-      min-width: 190px;
-      text-align: center;
-    }
-
-    .date-display .day {
-      font-size: 18px;
-      font-weight: 750;
-    }
-
-    .date-display .date {
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 2px;
-    }
-
-    .settings {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .zip-input {
-      width: 120px;
-      padding: 9px 11px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      outline: none;
-      background: white;
-    }
-
-    .zip-input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-soft);
-    }
-
-    .connection-status {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--red);
-    }
-
-    .status-dot.connected {
-      background: var(--green);
-    }
-
-    /* ----------------------------------------
-       MAIN GRID
-    ---------------------------------------- */
-
-    main {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 8px 20px 40px;
-    }
+    /*
+      On phones the three-column planner remains horizontally
+      scrollable rather than crushing the columns.
+    */
 
     .planner {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
+      grid-template-columns:
+        75px
+        180px
+        300px;
     }
 
-    .planner-header {
-      display: grid;
-      grid-template-columns: 160px 300px 1fr;
-      background: #0f172a;
-      color: white;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
+    .column-header {
+      top: 66px;
     }
-
-    .planner-header > div {
-      padding: 13px 16px;
-    }
-
-    .hour-row {
-      display: grid;
-      grid-template-columns: 160px 300px 1fr;
-      min-height: 86px;
-      border-top: 1px solid var(--border);
-      position: relative;
-    }
-
-    .hour-row.current {
-      background: #eff6ff;
-    }
-
-    .hour-row.current::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 4px;
-      background: var(--accent);
-    }
-
-    .hour-row.past {
-      opacity: 0.7;
-    }
-
-    .time-cell,
-    .weather-cell,
-    .plan-cell {
-      padding: 14px 16px;
-    }
-
-    .time-cell {
-      border-right: 1px solid var(--border);
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-    }
-
-    .time-main {
-      font-size: 17px;
-      font-weight: 750;
-      white-space: nowrap;
-    }
-
-    .time-period {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 3px;
-    }
-
-    .now-badge {
-      display: inline-block;
-      margin-top: 6px;
-      padding: 2px 6px;
-      border-radius: 5px;
-      background: var(--accent);
-      color: white;
-      font-size: 9px;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-
-    .weather-cell {
-      border-right: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .weather-icon {
-      width: 42px;
-      height: 42px;
-      display: grid;
-      place-items: center;
-      font-size: 27px;
-      border-radius: 12px;
-      background: var(--panel-soft);
-    }
-
-    .weather-temp {
-      font-size: 18px;
-      font-weight: 750;
-    }
-
-    .weather-description {
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 2px;
-    }
-
-    .weather-extra {
-      color: var(--muted);
-      font-size: 11px;
-      margin-top: 4px;
-    }
-
-    .plan-cell {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-    }
-
-    .event {
-      border-left: 4px solid var(--accent);
-      background: var(--accent-soft);
-      border-radius: 8px;
-      padding: 9px 11px;
-    }
-
-    .event-title {
-      font-weight: 700;
-      font-size: 14px;
-    }
-
-    .event-time {
-      color: #475569;
-      font-size: 11px;
-      margin-top: 3px;
-    }
-
-    .event-location {
-      color: #475569;
-      font-size: 11px;
-      margin-top: 3px;
-    }
-
-    .free {
-      color: #94a3b8;
-      font-size: 13px;
-      padding-top: 5px;
-    }
-
-    .all-day-event {
-      border-left-color: #7c3aed;
-      background: #f3e8ff;
-    }
-
-    /* ----------------------------------------
-       LOADING / ERROR
-    ---------------------------------------- */
-
-    .message {
-      padding: 40px 20px;
-      text-align: center;
-      color: var(--muted);
-    }
-
-    .spinner {
-      width: 30px;
-      height: 30px;
-      margin: 0 auto 12px;
-      border: 3px solid #dbeafe;
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    .error {
-      color: #991b1b;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      border-radius: 12px;
-      padding: 14px;
-      margin: 12px;
-      font-size: 13px;
-    }
-
-    /* ----------------------------------------
-       MOBILE
-    ---------------------------------------- */
-
-    @media (max-width: 850px) {
-      .header-inner {
-        align-items: flex-start;
-      }
-
-      .header-actions {
-        flex-direction: column;
-      }
-
-      .planner-header {
-        display: none;
-      }
-
-      .hour-row {
-        display: grid;
-        grid-template-columns: 85px 1fr;
-        grid-template-areas:
-          "time weather"
-          "time plan";
-        min-height: 145px;
-      }
-
-      .time-cell {
-        grid-area: time;
-        border-right: 1px solid var(--border);
-      }
-
-      .weather-cell {
-        grid-area: weather;
-        min-height: 68px;
-        border-right: 0;
-        border-bottom: 1px solid var(--border);
-      }
-
-      .plan-cell {
-        grid-area: plan;
-        min-height: 65px;
-      }
-
-      .controls {
-        padding-left: 10px;
-        padding-right: 10px;
-      }
-
-      main {
-        padding-left: 10px;
-        padding-right: 10px;
-      }
-
-      .control-panel {
-        align-items: stretch;
-      }
-
-      .date-navigation {
-        width: 100%;
-        justify-content: space-between;
-      }
-
-      .settings {
-        width: 100%;
-      }
-
-      .zip-input {
-        flex: 1;
-      }
-    }
-
-    @media (max-width: 500px) {
-      .brand-text p {
-        display: none;
-      }
-
-      .btn-text {
-        display: none;
-      }
-
-      .header-actions .btn {
-        padding: 9px 11px;
-      }
-
-      .weather-extra {
-        display: none;
-      }
-    }
-  </style>
+  }
+</style>
 </head>
 
 <body>
 
-<header>
-  <div class="header-inner">
+<div class="app">
 
+  <header>
     <div class="brand">
-      <div class="brand-icon">☀️</div>
+      <div class="logo">D</div>
 
-      <div class="brand-text">
+      <div>
         <h1>DayFlow</h1>
-        <p>Your day, weather, and plans in one view</p>
+        <p>Time · Weather · Plans</p>
       </div>
     </div>
 
     <div class="header-actions">
       <button
-        class="btn btn-secondary"
-        id="todayButton"
-        title="Go to today"
-      >
-        Today
+        class="secondary-button"
+        id="calendarButton">
+        Connect Calendar
       </button>
 
       <button
-        class="btn btn-primary"
-        id="googleButton"
-        title="Connect Google Calendar"
-      >
-        Connect Calendar
+        class="icon-button"
+        id="settingsButton"
+        aria-label="Settings">
+        ⚙
       </button>
     </div>
+  </header>
 
-  </div>
-</header>
+  <div class="controls">
 
-<section class="controls">
+    <button class="icon-button" id="previousDay">
+      ←
+    </button>
 
-  <div class="control-panel">
+    <button class="date-button" id="dateButton">
+      Today
+    </button>
 
-    <div class="date-navigation">
-
-      <button class="btn btn-light" id="previousDay">
-        ←
-      </button>
-
-      <div class="date-display">
-        <div class="day" id="dayName">Loading...</div>
-        <div class="date" id="dateName"></div>
-      </div>
-
-      <button class="btn btn-light" id="nextDay">
-        →
-      </button>
-
-    </div>
-
-    <div class="settings">
-
-      <input
-        id="zipCode"
-        class="zip-input"
-        type="text"
-        inputmode="numeric"
-        maxlength="10"
-        placeholder="ZIP code"
-        aria-label="ZIP code"
-      />
-
-      <button class="btn btn-light" id="weatherButton">
-        Update Weather
-      </button>
-
-      <div class="connection-status">
-        <span class="status-dot" id="calendarDot"></span>
-        <span id="calendarStatus">Calendar not connected</span>
-      </div>
-
-    </div>
+    <button class="icon-button" id="nextDay">
+      →
+    </button>
 
   </div>
 
-</section>
+  <main class="planner">
 
-<main>
+    <!-- TIME -->
 
-  <div class="planner">
+    <section class="column">
+      <div class="column-header">
+        Time
+      </div>
 
-    <div class="planner-header">
-      <div>Time</div>
-      <div>Weather</div>
-      <div>Plans</div>
+      <div id="timeColumn" class="timeline"></div>
+    </section>
+
+
+    <!-- WEATHER -->
+
+    <section class="column">
+      <div class="column-header">
+        Weather
+      </div>
+
+      <div id="weatherColumn" class="timeline">
+      </div>
+    </section>
+
+
+    <!-- PLANS -->
+
+    <section class="column">
+      <div class="column-header">
+        Plans
+      </div>
+
+      <div id="planColumn" class="timeline">
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+
+<!-- SETTINGS DIALOG -->
+
+<dialog id="settingsDialog">
+
+  <div class="dialog-content">
+
+    <h2>DayFlow Settings</h2>
+
+    <p>
+      Enter your ZIP code to load hourly weather for your location.
+      Your ZIP code stays in this browser.
+    </p>
+
+    <label for="zipInput">
+      ZIP code
+    </label>
+
+    <input
+      id="zipInput"
+      type="text"
+      inputmode="numeric"
+      maxlength="10"
+      placeholder="48601">
+
+    <label for="clientIdInput">
+      Google OAuth Client ID
+    </label>
+
+    <input
+      id="clientIdInput"
+      type="text"
+      placeholder="1234567890-xxxx.apps.googleusercontent.com">
+
+    <p>
+      The Client ID comes from your Google Cloud project.
+      Do not put a client secret in this file.
+    </p>
+
+    <div
+      id="settingsStatus"
+      class="status">
     </div>
 
-    <div id="plannerBody">
-      <div class="message">
-        <div class="spinner"></div>
-        Loading...
-      </div>
+    <div class="dialog-actions">
+
+      <button
+        class="secondary-button"
+        id="cancelSettings">
+        Cancel
+      </button>
+
+      <button
+        class="primary-button"
+        id="saveSettings">
+        Save
+      </button>
+
     </div>
 
   </div>
 
-</main>
+</dialog>
 
 
-<!--
-  Google APIs
--->
-<script src="https://apis.google.com/js/api.js"></script>
-<script src="https://accounts.google.com/gsi/client"></script>
+<!-- Google APIs -->
+
+<script
+  async
+  defer
+  src="https://apis.google.com/js/api.js">
+</script>
+
+<script
+  async
+  defer
+  src="https://accounts.google.com/gsi/client">
+</script>
 
 
 <script>
-/* =========================================================
-   CONFIGURATION
-========================================================= */
-
 /*
- * Create these in Google Cloud:
- *
- * 1. Enable Google Calendar API
- * 2. Create an API key
- * 3. Create an OAuth 2.0 Client ID
- *    Application type: Web application
- *
- * Add the domain where this HTML is hosted as an
- * Authorized JavaScript Origin.
- */
+=========================================================
+DAYFLOW
+=========================================================
 
-const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID";
-const GOOGLE_API_KEY = "YOUR_GOOGLE_API_KEY";
+Architecture:
 
-const CALENDAR_SCOPE =
-  "https://www.googleapis.com/auth/calendar.readonly";
+Google Calendar
+      |
+      v
+Google Calendar API
+      |
+      v
+events[]
+      |
+      v
+hourly planner <---- Open-Meteo hourly weather
+      ^
+      |
+ZIP -> coordinates
 
-const CALENDAR_DISCOVERY =
+Everything is client-side.
+
+=========================================================
+*/
+
+
+/* -------------------------------------------------------
+   CONFIGURATION
+------------------------------------------------------- */
+
+const GOOGLE_DISCOVERY_DOC =
   "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest";
 
+const GOOGLE_SCOPE =
+  "https://www.googleapis.com/auth/calendar.events.readonly";
 
-/* =========================================================
+let GOOGLE_CLIENT_ID = "";
+
+
+/* -------------------------------------------------------
    APPLICATION STATE
-========================================================= */
+------------------------------------------------------- */
 
-let selectedDate = new Date();
+const state = {
 
-let weatherData = null;
-let calendarEvents = [];
+  date: new Date(),
 
-let tokenClient = null;
+  zip: localStorage.getItem("dayflow_zip") || "",
 
-let gapiReady = false;
-let gisReady = false;
+  clientId:
+    localStorage.getItem("dayflow_client_id") || "",
+
+  coordinates: null,
+
+  weather: null,
+
+  events: [],
+
+  accessToken: null,
+
+  gapiReady: false,
+
+  gisReady: false,
+
+  tokenClient: null
+
+};
 
 
-/* =========================================================
+/* -------------------------------------------------------
    DOM
-========================================================= */
+------------------------------------------------------- */
 
-const plannerBody =
-  document.getElementById("plannerBody");
+const timeColumn =
+  document.getElementById("timeColumn");
 
-const dayName =
-  document.getElementById("dayName");
+const weatherColumn =
+  document.getElementById("weatherColumn");
 
-const dateName =
-  document.getElementById("dateName");
+const planColumn =
+  document.getElementById("planColumn");
+
+const dateButton =
+  document.getElementById("dateButton");
+
+const calendarButton =
+  document.getElementById("calendarButton");
+
+const settingsDialog =
+  document.getElementById("settingsDialog");
 
 const zipInput =
-  document.getElementById("zipCode");
+  document.getElementById("zipInput");
 
-const googleButton =
-  document.getElementById("googleButton");
+const clientIdInput =
+  document.getElementById("clientIdInput");
 
-const calendarStatus =
-  document.getElementById("calendarStatus");
-
-const calendarDot =
-  document.getElementById("calendarDot");
+const settingsStatus =
+  document.getElementById("settingsStatus");
 
 
-/* =========================================================
-   DATE HELPERS
-========================================================= */
+/* -------------------------------------------------------
+   HELPERS
+------------------------------------------------------- */
 
-function startOfDay(date) {
-
-  const d = new Date(date);
-
-  d.setHours(0, 0, 0, 0);
-
-  return d;
-}
-
-
-function endOfDay(date) {
-
-  const d = new Date(date);
-
-  d.setHours(23, 59, 59, 999);
-
-  return d;
+function pad(number) {
+  return String(number).padStart(2, "0");
 }
 
 
 function dateKey(date) {
-
-  const y = date.getFullYear();
-
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-
-  const d = String(date.getDate()).padStart(2, "0");
-
-  return `${y}-${m}-${d}`;
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate())
+  ].join("-");
 }
 
 
-function formatDateForDisplay(date) {
+function formatDate(date) {
 
-  return date.toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric"
+  return date.toLocaleDateString(
+    undefined,
+    {
+      weekday: "long",
+      month: "long",
+      day: "numeric"
+    }
+  );
+
+}
+
+
+function formatHour(hour) {
+
+  const suffix = hour >= 12 ? "PM" : "AM";
+
+  let h = hour % 12;
+
+  if (h === 0) {
+    h = 12;
+  }
+
+  return `${h} ${suffix}`;
+}
+
+
+function escapeHtml(value) {
+
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
+
+
+/* -------------------------------------------------------
+   DATE NAVIGATION
+------------------------------------------------------- */
+
+function renderDateHeader() {
+
+  const today = new Date();
+
+  const selected =
+    dateKey(state.date);
+
+  const todayKey =
+    dateKey(today);
+
+  if (selected === todayKey) {
+    dateButton.textContent = "Today";
+  } else {
+    dateButton.textContent =
+      formatDate(state.date);
+  }
+
+}
+
+
+document
+  .getElementById("previousDay")
+  .addEventListener("click", () => {
+
+    state.date.setDate(
+      state.date.getDate() - 1
+    );
+
+    refresh();
+
   });
-}
 
 
-function formatHour(date) {
+document
+  .getElementById("nextDay")
+  .addEventListener("click", () => {
 
-  return date.toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit"
+    state.date.setDate(
+      state.date.getDate() + 1
+    );
+
+    refresh();
+
   });
+
+
+dateButton.addEventListener(
+  "click",
+  () => {
+
+    const date =
+      prompt(
+        "Enter date as YYYY-MM-DD",
+        dateKey(state.date)
+      );
+
+    if (!date) return;
+
+    const parsed =
+      new Date(date + "T12:00:00");
+
+    if (Number.isNaN(parsed.getTime())) {
+      alert("Invalid date.");
+      return;
+    }
+
+    state.date = parsed;
+
+    refresh();
+
+  }
+);
+
+
+/* -------------------------------------------------------
+   TIME COLUMN
+------------------------------------------------------- */
+
+function renderTimeColumn() {
+
+  timeColumn.innerHTML = "";
+
+  const now = new Date();
+
+  for (let hour = 0; hour < 24; hour++) {
+
+    const row =
+      document.createElement("div");
+
+    row.className = "hour";
+
+    const isToday =
+      dateKey(state.date) === dateKey(now);
+
+    if (
+      isToday &&
+      now.getHours() === hour
+    ) {
+      row.classList.add("current");
+    }
+
+    row.innerHTML = `
+      <div class="time-cell">
+        <div class="time-label">
+          ${formatHour(hour)}
+        </div>
+
+        <div class="time-sub">
+          ${pad(hour)}:00
+        </div>
+      </div>
+    `;
+
+    timeColumn.appendChild(row);
+  }
+
 }
 
 
-/* =========================================================
-   WEATHER
-========================================================= */
+/* -------------------------------------------------------
+   ZIP -> COORDINATES
+------------------------------------------------------- */
 
 /*
- * Open-Meteo:
- *
- * Step 1:
- * ZIP -> latitude/longitude
- *
- * Step 2:
- * latitude/longitude -> hourly weather
- *
- * No weather API key is required.
- */
+Zippopotam.us is used only to turn the ZIP code into
+latitude/longitude.
+
+Then Open-Meteo provides the actual hourly forecast.
+*/
 
 async function getCoordinatesFromZip(zip) {
 
-  const url =
-    "https://geocoding-api.open-meteo.com/v1/search" +
-    "?name=" +
-    encodeURIComponent(zip) +
-    "&count=5" +
-    "&language=en" +
-    "&format=json";
-
-  const response = await fetch(url);
+  const response =
+    await fetch(
+      `https://api.zippopotam.us/us/${encodeURIComponent(zip)}`
+    );
 
   if (!response.ok) {
-    throw new Error("Could not look up ZIP code.");
+    throw new Error(
+      "Could not find that ZIP code."
+    );
   }
 
-  const data = await response.json();
+  const data =
+    await response.json();
 
-  if (!data.results || data.results.length === 0) {
-    throw new Error("ZIP code was not found.");
+  if (!data.places?.length) {
+    throw new Error(
+      "No location found for that ZIP code."
+    );
   }
 
-  /*
-   * Prefer a US result when possible.
-   */
-  const usResult =
-    data.results.find(x => x.country_code === "US");
-
-  return usResult || data.results[0];
-}
-
-
-async function getWeather(zip) {
-
-  const location =
-    await getCoordinatesFromZip(zip);
-
-  const latitude = location.latitude;
-  const longitude = location.longitude;
-
-  const url =
-    "https://api.open-meteo.com/v1/forecast" +
-    "?latitude=" + latitude +
-    "&longitude=" + longitude +
-    "&hourly=" +
-    [
-      "temperature_2m",
-      "apparent_temperature",
-      "precipitation_probability",
-      "weather_code",
-      "wind_speed_10m"
-    ].join(",") +
-    "&temperature_unit=fahrenheit" +
-    "&wind_speed_unit=mph" +
-    "&timezone=auto" +
-    "&forecast_days=7";
-
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error("Weather service failed.");
-  }
-
-  const data = await response.json();
+  const place =
+    data.places[0];
 
   return {
-    ...data,
-    location
+
+    latitude:
+      Number(place.latitude),
+
+    longitude:
+      Number(place.longitude),
+
+    city:
+      place["place name"],
+
+    state:
+      place["state abbreviation"]
+
   };
+
 }
 
 
-/* =========================================================
-   WEATHER ICONS
-========================================================= */
+/* -------------------------------------------------------
+   WEATHER
+------------------------------------------------------- */
 
 function weatherIcon(code) {
 
   /*
-   * WMO weather interpretation codes.
-   */
+    Open-Meteo / WMO weather codes
+  */
 
-  if (code === 0) return "☀️";
+  if (code === 0)
+    return "☀️";
 
-  if ([1, 2].includes(code)) return "🌤️";
+  if ([1,2].includes(code))
+    return "🌤️";
 
-  if (code === 3) return "☁️";
+  if (code === 3)
+    return "☁️";
 
-  if ([45, 48].includes(code)) return "🌫️";
+  if ([45,48].includes(code))
+    return "🌫️";
 
   if (
-    [51, 53, 55, 56, 57].includes(code)
-  ) {
+    [51,53,55,56,57].includes(code)
+  )
     return "🌦️";
-  }
 
   if (
-    [61, 63, 65, 66, 67].includes(code)
-  ) {
+    [61,63,65,66,67].includes(code)
+  )
     return "🌧️";
-  }
 
   if (
-    [71, 73, 75, 77].includes(code)
-  ) {
+    [71,73,75,77].includes(code)
+  )
     return "🌨️";
-  }
 
   if (
-    [80, 81, 82].includes(code)
-  ) {
+    [80,81,82].includes(code)
+  )
     return "🌦️";
-  }
 
   if (
-    [85, 86].includes(code)
-  ) {
+    [85,86].includes(code)
+  )
     return "🌨️";
-  }
 
   if (
-    [95, 96, 99].includes(code)
-  ) {
+    [95,96,99].includes(code)
+  )
     return "⛈️";
-  }
 
   return "🌡️";
 }
 
 
-function weatherDescription(code) {
+async function loadWeather() {
 
-  const descriptions = {
+  if (!state.zip) {
 
-    0: "Clear",
+    weatherColumn.innerHTML = `
+      <div class="empty">
+        Enter a ZIP code in settings.
+      </div>
+    `;
 
-    1: "Mostly clear",
-    2: "Partly cloudy",
-    3: "Cloudy",
+    return;
 
-    45: "Fog",
-    48: "Fog",
-
-    51: "Light drizzle",
-    53: "Drizzle",
-    55: "Heavy drizzle",
-
-    56: "Freezing drizzle",
-    57: "Freezing drizzle",
-
-    61: "Light rain",
-    63: "Rain",
-    65: "Heavy rain",
-
-    66: "Freezing rain",
-    67: "Heavy freezing rain",
-
-    71: "Light snow",
-    73: "Snow",
-    75: "Heavy snow",
-    77: "Snow grains",
-
-    80: "Rain showers",
-    81: "Rain showers",
-    82: "Heavy showers",
-
-    85: "Snow showers",
-    86: "Heavy snow showers",
-
-    95: "Thunderstorm",
-    96: "Thunderstorm",
-    99: "Thunderstorm"
-  };
-
-  return descriptions[code] || "Unknown";
-}
-
-
-/* =========================================================
-   WEATHER LOOKUP
-========================================================= */
-
-function weatherForHour(date) {
-
-  if (!weatherData || !weatherData.hourly) {
-    return null;
   }
-
-  const localDateString =
-    dateKey(date);
-
-  /*
-   * Open-Meteo returns local-time ISO strings
-   * such as:
-   *
-   * 2026-09-07T14:00
-   */
-
-  const targetPrefix =
-    localDateString + "T" +
-    String(date.getHours()).padStart(2, "0") +
-    ":00";
-
-  const index =
-    weatherData.hourly.time.findIndex(
-      t => t === targetPrefix
-    );
-
-  if (index === -1) {
-    return null;
-  }
-
-  return {
-    temperature:
-      weatherData.hourly.temperature_2m[index],
-
-    apparent:
-      weatherData.hourly.apparent_temperature[index],
-
-    precipitation:
-      weatherData.hourly.precipitation_probability[index],
-
-    code:
-      weatherData.hourly.weather_code[index],
-
-    wind:
-      weatherData.hourly.wind_speed_10m[index]
-  };
-}
-
-
-/* =========================================================
-   GOOGLE CALENDAR INITIALIZATION
-========================================================= */
-
-function gapiLoaded() {
-
-  gapi.load(
-    "client",
-    initializeGapi
-  );
-}
-
-
-async function initializeGapi() {
 
   try {
 
-    await gapi.client.init({
-      apiKey: GOOGLE_API_KEY,
-      discoveryDocs: [
-        CALENDAR_DISCOVERY
-      ]
+    weatherColumn.innerHTML = `
+      ${Array.from(
+        { length: 24 },
+        () => `
+          <div class="hour weather-cell">
+            <span class="weather-loading">
+              Loading weather…
+            </span>
+          </div>
+        `
+      ).join("")}
+    `;
+
+
+    /*
+      Get coordinates.
+    */
+
+    if (!state.coordinates) {
+
+      state.coordinates =
+        await getCoordinatesFromZip(
+          state.zip
+        );
+
+    }
+
+
+    /*
+      Get hourly forecast.
+
+      Open-Meteo does not require an API key for
+      normal non-commercial usage.
+    */
+
+    const params = new URLSearchParams({
+
+      latitude:
+        state.coordinates.latitude,
+
+      longitude:
+        state.coordinates.longitude,
+
+      hourly: [
+        "temperature_2m",
+        "apparent_temperature",
+        "precipitation_probability",
+        "weather_code",
+        "wind_speed_10m"
+      ].join(","),
+
+      temperature_unit: "fahrenheit",
+
+      wind_speed_unit: "mph",
+
+      timezone: "auto",
+
+      forecast_days: "7"
+
     });
 
-    gapiReady = true;
 
-    maybeInitializeGoogle();
+    const response =
+      await fetch(
+        `https://api.open-meteo.com/v1/forecast?${params}`
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        "Weather service returned an error."
+      );
+    }
+
+    state.weather =
+      await response.json();
+
+    renderWeather();
 
   } catch (error) {
 
-    console.error(
-      "Google API initialization failed:",
-      error
-    );
+    console.error(error);
+
+    weatherColumn.innerHTML = `
+      <div class="empty">
+        Weather unavailable.<br><br>
+        ${escapeHtml(error.message)}
+      </div>
+    `;
+
   }
+
 }
 
 
-function gisLoaded() {
+/* -------------------------------------------------------
+   WEATHER RENDERING
+------------------------------------------------------- */
 
-  if (
-    GOOGLE_CLIENT_ID ===
-    "YOUR_GOOGLE_CLIENT_ID"
-  ) {
-    console.warn(
-      "Google Client ID has not been configured."
-    );
+function renderWeather() {
 
-    return;
-  }
+  if (!state.weather) return;
 
-  tokenClient =
-    google.accounts.oauth2.initTokenClient({
+  const hourly =
+    state.weather.hourly;
 
-      client_id:
-        GOOGLE_CLIENT_ID,
+  const selectedDate =
+    dateKey(state.date);
 
-      scope:
-        CALENDAR_SCOPE,
+  weatherColumn.innerHTML = "";
 
-      callback: ""
-    });
+  for (let hour = 0; hour < 24; hour++) {
 
-  gisReady = true;
+    const row =
+      document.createElement("div");
 
-  maybeInitializeGoogle();
-}
+    row.className = "hour";
 
 
-function maybeInitializeGoogle() {
+    /*
+      Find the Open-Meteo timestamp corresponding
+      to this date and hour.
+    */
 
-  if (gapiReady && gisReady) {
+    const timestamp =
+      `${selectedDate}T${pad(hour)}:00`;
 
-    googleButton.disabled = false;
-
-  }
-}
-
-
-/* =========================================================
-   GOOGLE CALENDAR AUTH
-========================================================= */
-
-googleButton.addEventListener(
-  "click",
-  connectGoogleCalendar
-);
+    const index =
+      hourly.time.indexOf(timestamp);
 
 
-async function connectGoogleCalendar() {
+    if (index === -1) {
 
-  if (
-    GOOGLE_CLIENT_ID ===
-    "YOUR_GOOGLE_CLIENT_ID"
-  ) {
+      row.innerHTML = `
+        <div class="weather-cell">
+          <span class="weather-loading">
+            —
+          </span>
+        </div>
+      `;
 
-    alert(
-      "Add your Google OAuth Client ID to the HTML first."
-    );
+      weatherColumn.appendChild(row);
 
-    return;
-  }
+      continue;
 
-  if (!gapiReady || !gisReady) {
+    }
 
-    alert(
-      "Google services are still loading. Try again."
-    );
 
-    return;
-  }
-
-  tokenClient.callback =
-    async response => {
-
-      if (response.error) {
-
-        console.error(response);
-
-        calendarStatus.textContent =
-          "Calendar connection failed";
-
-        return;
-      }
-
-      calendarDot.classList.add(
-        "connected"
+    const temp =
+      Math.round(
+        hourly.temperature_2m[index]
       );
 
-      calendarStatus.textContent =
-        "Google Calendar connected";
+    const feels =
+      Math.round(
+        hourly.apparent_temperature[index]
+      );
 
-      googleButton.textContent =
-        "Refresh Calendar";
+    const precipitation =
+      hourly.precipitation_probability[index];
 
-      await loadCalendar();
-    };
+    const wind =
+      Math.round(
+        hourly.wind_speed_10m[index]
+      );
+
+    const code =
+      hourly.weather_code[index];
 
 
-  const existingToken =
-    gapi.client.getToken();
+    row.innerHTML = `
 
-  if (!existingToken) {
+      <div class="weather-cell">
 
-    tokenClient.requestAccessToken({
-      prompt: "consent"
-    });
+        <div class="weather-icon">
+          ${weatherIcon(code)}
+        </div>
 
-  } else {
+        <div>
 
-    tokenClient.requestAccessToken({
+          <div class="weather-temp">
+            ${temp}°F
+          </div>
+
+          <div class="weather-details">
+            Feels ${feels}° ·
+            💧 ${precipitation ?? 0}% ·
+            ${wind} mph
+          </div>
+
+        </div>
+
+      </div>
+
+    `;
+
+    weatherColumn.appendChild(row);
+
+  }
+
+}
+
+
+/* -------------------------------------------------------
+   GOOGLE CALENDAR
+------------------------------------------------------- */
+
+function initializeGoogle() {
+
+  if (
+    !state.clientId ||
+    state.clientId.includes("YOUR_")
+  ) {
+    return;
+  }
+
+  GOOGLE_CLIENT_ID =
+    state.clientId;
+
+
+  /*
+    Google API JavaScript client.
+  */
+
+  if (window.gapi) {
+
+    gapi.load(
+      "client",
+      async () => {
+
+        try {
+
+          await gapi.client.init({
+            discoveryDocs:
+              [GOOGLE_DISCOVERY_DOC]
+          });
+
+          state.gapiReady = true;
+
+          maybeInitializeGoogleToken();
+
+        } catch (error) {
+
+          console.error(
+            "Google API initialization failed",
+            error
+          );
+
+        }
+
+      }
+    );
+
+  }
+
+
+  /*
+    Google Identity Services OAuth client.
+  */
+
+  const waitForGoogle =
+    setInterval(() => {
+
+      if (
+        window.google?.accounts?.oauth2
+      ) {
+
+        clearInterval(waitForGoogle);
+
+        state.tokenClient =
+          google.accounts.oauth2.initTokenClient({
+
+            client_id:
+              GOOGLE_CLIENT_ID,
+
+            scope:
+              GOOGLE_SCOPE,
+
+            callback: ""
+
+          });
+
+        state.gisReady = true;
+
+        maybeInitializeGoogleToken();
+
+      }
+
+    }, 100);
+
+}
+
+
+function maybeInitializeGoogleToken() {
+
+  if (
+    state.gapiReady &&
+    state.gisReady
+  ) {
+
+    calendarButton.disabled = false;
+
+  }
+
+}
+
+
+/* -------------------------------------------------------
+   CONNECT CALENDAR
+------------------------------------------------------- */
+
+calendarButton.addEventListener(
+  "click",
+  async () => {
+
+    if (!state.clientId) {
+
+      settingsDialog.showModal();
+
+      settingsStatus.textContent =
+        "Enter your Google OAuth Client ID first.";
+
+      settingsStatus.className =
+        "status error";
+
+      return;
+
+    }
+
+    if (
+      !state.gapiReady ||
+      !state.gisReady
+    ) {
+
+      alert(
+        "Google services are still loading. Try again in a moment."
+      );
+
+      return;
+
+    }
+
+
+    state.tokenClient.callback =
+      async (response) => {
+
+        if (response.error) {
+
+          console.error(response);
+
+          alert(
+            "Google authorization failed."
+          );
+
+          return;
+
+        }
+
+        state.accessToken =
+          response.access_token;
+
+        gapi.client.setToken({
+          access_token:
+            response.access_token
+        });
+
+        calendarButton.textContent =
+          "Calendar Connected";
+
+        await loadCalendarEvents();
+
+      };
+
+
+    /*
+      Ask Google for an OAuth access token.
+    */
+
+    state.tokenClient.requestAccessToken({
       prompt: ""
     });
 
   }
-}
+);
 
 
-/* =========================================================
+/* -------------------------------------------------------
    LOAD CALENDAR EVENTS
-========================================================= */
+------------------------------------------------------- */
 
-async function loadCalendar() {
-
-  if (!gapi.client.getToken()) {
-    return;
-  }
+async function loadCalendarEvents() {
 
   try {
 
     const start =
-      startOfDay(selectedDate);
+      new Date(state.date);
+
+    start.setHours(
+      0, 0, 0, 0
+    );
+
 
     const end =
-      endOfDay(selectedDate);
+      new Date(state.date);
+
+    end.setDate(
+      end.getDate() + 1
+    );
+
+    end.setHours(
+      0, 0, 0, 0
+    );
+
 
     const response =
       await gapi.client.calendar.events.list({
@@ -1204,704 +1451,424 @@ async function loadCalendar() {
         timeMax:
           end.toISOString(),
 
+        showDeleted: false,
+
         singleEvents: true,
 
         orderBy: "startTime",
 
-        showDeleted: false,
-
-        maxResults: 250
+        maxResults: 100
 
       });
 
-    calendarEvents =
+
+    state.events =
       response.result.items || [];
 
-    render();
+    renderPlans();
 
-  } catch (error) {
-
-    console.error(
-      "Calendar error:",
-      error
-    );
-
-    calendarEvents = [];
-
-    render();
-
-    alert(
-      "Unable to load Google Calendar."
-    );
-  }
-}
-
-
-/* =========================================================
-   CALENDAR EVENT HELPERS
-========================================================= */
-
-function eventStart(event) {
-
-  if (event.start.dateTime) {
-    return new Date(
-      event.start.dateTime
-    );
-  }
-
-  /*
-   * All-day event.
-   */
-  const parts =
-    event.start.date.split("-");
-
-  return new Date(
-    Number(parts[0]),
-    Number(parts[1]) - 1,
-    Number(parts[2]),
-    0,
-    0,
-    0
-  );
-}
-
-
-function eventEnd(event) {
-
-  if (event.end.dateTime) {
-    return new Date(
-      event.end.dateTime
-    );
-  }
-
-  /*
-   * Google all-day end dates are exclusive.
-   */
-  const parts =
-    event.end.date.split("-");
-
-  const date =
-    new Date(
-      Number(parts[0]),
-      Number(parts[1]) - 1,
-      Number(parts[2]),
-      0,
-      0,
-      0
-    );
-
-  return new Date(
-    date.getTime() - 1
-  );
-}
-
-
-function eventsForHour(hour) {
-
-  const hourStart =
-    new Date(hour);
-
-  const hourEnd =
-    new Date(
-      hour.getTime() + 60 * 60 * 1000
-    );
-
-  return calendarEvents.filter(event => {
-
-    const start =
-      eventStart(event);
-
-    const end =
-      eventEnd(event);
-
-    return (
-      start < hourEnd &&
-      end >= hourStart
-    );
-  });
-}
-
-
-/* =========================================================
-   RENDER
-========================================================= */
-
-function render() {
-
-  dayName.textContent =
-    selectedDate.toLocaleDateString(
-      undefined,
-      {
-        weekday: "long"
-      }
-    );
-
-  dateName.textContent =
-    formatDateForDisplay(
-      selectedDate
-    );
-
-  renderHours();
-}
-
-
-function renderHours() {
-
-  plannerBody.innerHTML = "";
-
-  const today =
-    new Date();
-
-  /*
-   * Display 24 hours.
-   */
-
-  for (
-    let hour = 0;
-    hour < 24;
-    hour++
-  ) {
-
-    const date =
-      new Date(selectedDate);
-
-    date.setHours(
-      hour,
-      0,
-      0,
-      0
-    );
-
-    const row =
-      document.createElement("div");
-
-    row.className =
-      "hour-row";
-
-    const isToday =
-      dateKey(date) ===
-      dateKey(today);
-
-    const isCurrentHour =
-      isToday &&
-      date.getHours() ===
-      today.getHours();
-
-    if (isCurrentHour) {
-      row.classList.add("current");
-    }
-
-    if (
-      isToday &&
-      date < today &&
-      !isCurrentHour
-    ) {
-      row.classList.add("past");
-    }
-
-
-    /* TIME */
-
-    const timeCell =
-      document.createElement("div");
-
-    timeCell.className =
-      "time-cell";
-
-    const timeContent =
-      document.createElement("div");
-
-    const timeMain =
-      document.createElement("div");
-
-    timeMain.className =
-      "time-main";
-
-    timeMain.textContent =
-      formatHour(date);
-
-    timeContent.appendChild(
-      timeMain
-    );
-
-    if (isCurrentHour) {
-
-      const nowBadge =
-        document.createElement("div");
-
-      nowBadge.className =
-        "now-badge";
-
-      nowBadge.textContent =
-        "Now";
-
-      timeContent.appendChild(
-        nowBadge
-      );
-    }
-
-    timeCell.appendChild(
-      timeContent
-    );
-
-
-    /* WEATHER */
-
-    const weatherCell =
-      document.createElement("div");
-
-    weatherCell.className =
-      "weather-cell";
-
-    const weather =
-      weatherForHour(date);
-
-    if (weather) {
-
-      const icon =
-        document.createElement("div");
-
-      icon.className =
-        "weather-icon";
-
-      icon.textContent =
-        weatherIcon(
-          weather.code
-        );
-
-      weatherCell.appendChild(
-        icon
-      );
-
-
-      const weatherInfo =
-        document.createElement("div");
-
-      const temp =
-        document.createElement("div");
-
-      temp.className =
-        "weather-temp";
-
-      temp.textContent =
-        `${Math.round(weather.temperature)}°F`;
-
-      weatherInfo.appendChild(
-        temp
-      );
-
-
-      const description =
-        document.createElement("div");
-
-      description.className =
-        "weather-description";
-
-      description.textContent =
-        weatherDescription(
-          weather.code
-        );
-
-      weatherInfo.appendChild(
-        description
-      );
-
-
-      const extra =
-        document.createElement("div");
-
-      extra.className =
-        "weather-extra";
-
-      extra.textContent =
-        `${weather.precipitation ?? 0}% rain · ` +
-        `${Math.round(weather.wind ?? 0)} mph wind`;
-
-      weatherInfo.appendChild(
-        extra
-      );
-
-      weatherCell.appendChild(
-        weatherInfo
-      );
-
-    } else {
-
-      weatherCell.innerHTML =
-        `<span class="free">
-           Weather unavailable
-         </span>`;
-    }
-
-
-    /* PLANS */
-
-    const planCell =
-      document.createElement("div");
-
-    planCell.className =
-      "plan-cell";
-
-    const events =
-      eventsForHour(date);
-
-    if (events.length === 0) {
-
-      const free =
-        document.createElement("div");
-
-      free.className =
-        "free";
-
-      free.textContent =
-        "No plans";
-
-      planCell.appendChild(
-        free
-      );
-
-    } else {
-
-      events.forEach(event => {
-
-        const eventBox =
-          document.createElement("div");
-
-        eventBox.className =
-          "event";
-
-        if (!event.start.dateTime) {
-
-          eventBox.classList.add(
-            "all-day-event"
-          );
-        }
-
-
-        const title =
-          document.createElement("div");
-
-        title.className =
-          "event-title";
-
-        title.textContent =
-          event.summary ||
-          "(No title)";
-
-        eventBox.appendChild(
-          title
-        );
-
-
-        const time =
-          document.createElement("div");
-
-        time.className =
-          "event-time";
-
-        if (event.start.dateTime) {
-
-          time.textContent =
-            `${formatHour(eventStart(event))} – ` +
-            `${formatHour(eventEnd(event))}`;
-
-        } else {
-
-          time.textContent =
-            "All day";
-        }
-
-        eventBox.appendChild(
-          time
-        );
-
-
-        if (event.location) {
-
-          const location =
-            document.createElement("div");
-
-          location.className =
-            "event-location";
-
-          location.textContent =
-            "📍 " + event.location;
-
-          eventBox.appendChild(
-            location
-          );
-        }
-
-        planCell.appendChild(
-          eventBox
-        );
-
-      });
-    }
-
-
-    row.appendChild(
-      timeCell
-    );
-
-    row.appendChild(
-      weatherCell
-    );
-
-    row.appendChild(
-      planCell
-    );
-
-    plannerBody.appendChild(
-      row
-    );
-  }
-}
-
-
-/* =========================================================
-   LOAD EVERYTHING
-========================================================= */
-
-async function refreshWeather() {
-
-  const zip =
-    zipInput.value.trim();
-
-  if (!zip) {
-
-    alert(
-      "Enter a ZIP code first."
-    );
-
-    return;
-  }
-
-  plannerBody.innerHTML = `
-    <div class="message">
-      <div class="spinner"></div>
-      Loading weather...
-    </div>
-  `;
-
-  try {
-
-    weatherData =
-      await getWeather(zip);
-
-    localStorage.setItem(
-      "dayflowZip",
-      zip
-    );
-
-    render();
 
   } catch (error) {
 
     console.error(error);
 
-    plannerBody.innerHTML = `
-      <div class="error">
-        ${escapeHtml(error.message)}
-      </div>
-    `;
-  }
-}
-
-
-/* =========================================================
-   NAVIGATION
-========================================================= */
-
-document
-  .getElementById("previousDay")
-  .addEventListener(
-    "click",
-    async () => {
-
-      selectedDate.setDate(
-        selectedDate.getDate() - 1
-      );
-
-      await reloadForDate();
-    }
-  );
-
-
-document
-  .getElementById("nextDay")
-  .addEventListener(
-    "click",
-    async () => {
-
-      selectedDate.setDate(
-        selectedDate.getDate() + 1
-      );
-
-      await reloadForDate();
-    }
-  );
-
-
-document
-  .getElementById("todayButton")
-  .addEventListener(
-    "click",
-    async () => {
-
-      selectedDate =
-        new Date();
-
-      await reloadForDate();
-    }
-  );
-
-
-document
-  .getElementById("weatherButton")
-  .addEventListener(
-    "click",
-    refreshWeather
-  );
-
-
-zipInput.addEventListener(
-  "keydown",
-  event => {
-
-    if (event.key === "Enter") {
-      refreshWeather();
-    }
-
-  }
-);
-
-
-async function reloadForDate() {
-
-  render();
-
-  /*
-   * Weather endpoint already gives several days,
-   * so we don't need to fetch it again unless the
-   * selected date is outside the loaded forecast.
-   */
-
-  if (
-    !weatherData ||
-    !weatherData.hourly ||
-    !weatherData.hourly.time.some(
-      t => t.startsWith(
-        dateKey(selectedDate)
-      )
-    )
-  ) {
-
-    const zip =
-      zipInput.value.trim();
-
-    if (zip) {
-      await refreshWeather();
-    }
-  }
-
-  if (gapi.client.getToken()) {
-    await loadCalendar();
-  }
-
-  render();
-}
-
-
-/* =========================================================
-   SECURITY / HTML ESCAPING
-========================================================= */
-
-function escapeHtml(value) {
-
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-
-/* =========================================================
-   INITIALIZATION
-========================================================= */
-
-function initializeApp() {
-
-  const savedZip =
-    localStorage.getItem(
-      "dayflowZip"
+    alert(
+      "Unable to load Google Calendar events."
     );
 
-  if (savedZip) {
-    zipInput.value =
-      savedZip;
   }
 
-  render();
-
-  /*
-   * If we have a ZIP, load weather automatically.
-   */
-  if (savedZip) {
-    refreshWeather();
-  }
-
-  /*
-   * Google buttons start disabled until
-   * the Google libraries are ready.
-   */
-  googleButton.disabled = true;
 }
 
 
-/*
- * Google script callbacks.
- *
- * These are called by the Google API script
- * tags after they load.
- */
+/* -------------------------------------------------------
+   CALENDAR EVENT HELPERS
+------------------------------------------------------- */
 
-window.gapiLoaded =
-  gapiLoaded;
+function eventStart(event) {
 
-window.gisLoaded =
-  gisLoaded;
+  /*
+    Timed event.
+  */
 
+  if (event.start?.dateTime) {
 
-/*
- * Because the scripts above don't use onload
- * attributes, explicitly initialize after the
- * page has loaded.
- */
-
-window.addEventListener(
-  "load",
-  () => {
-
-    if (
-      typeof gapi !== "undefined"
-    ) {
-      gapiLoaded();
-    }
-
-    if (
-      typeof google !== "undefined" &&
-      google.accounts
-    ) {
-      gisLoaded();
-    }
-
-    initializeApp();
+    return new Date(
+      event.start.dateTime
+    );
 
   }
-);
+
+
+  /*
+    All-day event.
+
+    We treat it as beginning at midnight.
+  */
+
+  if (event.start?.date) {
+
+    return new Date(
+      event.start.date + "T00:00:00"
+    );
+
+  }
+
+  return null;
+
+}
+
+
+function eventEnd(event) {
+
+  if (event.end?.dateTime) {
+
+    return new Date(
+      event.end.dateTime
+    );
+
+  }
+
+  if (event.end?.date) {
+
+    return new Date(
+      event.end.date + "T00:00:00"
+    );
+
+  }
+
+  return null;
+
+}
+
+
+function eventTouchesHour(
+  event,
+  hour
+) {
+
+  const start =
+    eventStart(event);
+
+  const end =
+    eventEnd(event);
+
+  if (!start || !end) {
+    return false;
+  }
+
+
+  const hourStart =
+    new Date(state.date);
+
+  hourStart.setHours(
+    hour, 0, 0, 0
+  );
+
+
+  const hourEnd =
+    new Date(hourStart);
+
+  hourEnd.setHours(
+    hour + 1
+  );
+
+
+  return (
+    start < hourEnd &&
+    end > hourStart
+  );
+
+}
+
+
+function formatEventTime(event) {
+
+  if (
+    !event.start?.dateTime
+  ) {
+
+    return "All day";
+
+  }
+
+  const start =
+    eventStart(event);
+
+  const end =
+    eventEnd(event);
+
+  return `
+    ${start.toLocaleTimeString(
+      undefined,
+      {
+        hour: "numeric",
+        minute: "2-digit"
+      }
+    )}
+    –
+    ${end.toLocaleTimeString(
+      undefined,
+      {
+        hour: "numeric",
+        minute: "2-digit"
+      }
+    )}
+  `;
+
+}
+
+
+/* -------------------------------------------------------
+   RENDER PLANS
+------------------------------------------------------- */
+
+function renderPlans() {
+
+  planColumn.innerHTML = "";
+
+
+  for (let hour = 0; hour < 24; hour++) {
+
+    const row =
+      document.createElement("div");
+
+    row.className = "hour";
+
+
+    const events =
+      state.events.filter(
+        event =>
+          eventTouchesHour(
+            event,
+            hour
+          )
+      );
+
+
+    if (!events.length) {
+
+      row.innerHTML = `
+        <div class="free">
+          Free
+        </div>
+      `;
+
+    } else {
+
+      row.innerHTML =
+        `<div class="plan-cell">
+          ${
+            events.map(event => `
+              <div class="event">
+
+                <div class="event-title">
+                  ${escapeHtml(
+                    event.summary ||
+                    "Untitled event"
+                  )}
+                </div>
+
+                <div class="event-time">
+                  ${formatEventTime(event)}
+                </div>
+
+              </div>
+            `).join("")
+          }
+        </div>`;
+
+    }
+
+
+    planColumn.appendChild(row);
+
+  }
+
+}
+
+
+/* -------------------------------------------------------
+   SETTINGS
+------------------------------------------------------- */
+
+document
+  .getElementById("settingsButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      zipInput.value =
+        state.zip;
+
+      clientIdInput.value =
+        state.clientId;
+
+      settingsStatus.textContent = "";
+
+      settingsDialog.showModal();
+
+    }
+  );
+
+
+document
+  .getElementById("cancelSettings")
+  .addEventListener(
+    "click",
+    () => {
+
+      settingsDialog.close();
+
+    }
+  );
+
+
+document
+  .getElementById("saveSettings")
+  .addEventListener(
+    "click",
+    async () => {
+
+      const zip =
+        zipInput.value.trim();
+
+      const clientId =
+        clientIdInput.value.trim();
+
+
+      if (!/^\d{5}(-\d{4})?$/.test(zip)) {
+
+        settingsStatus.textContent =
+          "Please enter a valid US ZIP code.";
+
+        settingsStatus.className =
+          "status error";
+
+        return;
+
+      }
+
+
+      state.zip =
+        zip;
+
+      state.clientId =
+        clientId;
+
+
+      localStorage.setItem(
+        "dayflow_zip",
+        zip
+      );
+
+      localStorage.setItem(
+        "dayflow_client_id",
+        clientId
+      );
+
+
+      /*
+        Clear old coordinates so a changed ZIP
+        gets a fresh lookup.
+      */
+
+      state.coordinates = null;
+
+
+      settingsStatus.textContent =
+        "Settings saved.";
+
+      settingsStatus.className =
+        "status success";
+
+
+      setTimeout(() => {
+
+        settingsDialog.close();
+
+        initializeGoogle();
+
+        refresh();
+
+      }, 400);
+
+    }
+  );
+
+
+/* -------------------------------------------------------
+   MAIN REFRESH
+------------------------------------------------------- */
+
+async function refresh() {
+
+  renderDateHeader();
+
+  renderTimeColumn();
+
+  renderPlans();
+
+  await loadWeather();
+
+
+  /*
+    If Google is already connected, reload events
+    for the newly selected date.
+  */
+
+  if (
+    state.accessToken &&
+    state.gapiReady
+  ) {
+
+    await loadCalendarEvents();
+
+  }
+
+}
+
+
+/* -------------------------------------------------------
+   INITIALIZE
+------------------------------------------------------- */
+
+async function init() {
+
+  calendarButton.disabled = true;
+
+  renderDateHeader();
+
+  renderTimeColumn();
+
+  renderPlans();
+
+
+  if (state.clientId) {
+
+    initializeGoogle();
+
+  }
+
+
+  if (state.zip) {
+
+    await loadWeather();
+
+  } else {
+
+    weatherColumn.innerHTML = `
+      <div class="empty">
+        Open ⚙ and enter your ZIP code.
+      </div>
+    `;
+
+  }
+
+}
+
+
+init();
 
 </script>
 
