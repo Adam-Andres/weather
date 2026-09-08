@@ -1361,4 +1361,36 @@ function escapeHtml(value) {
       "'",
       "&#039;"
     );
+
+/* ------------------------------------------------------------
+   SERVICE WORKER / PWA
+------------------------------------------------------------ */
+
+if ("serviceWorker" in navigator) {
+
+  window.addEventListener("load", () => {
+
+    navigator.serviceWorker
+      .register("./service-worker.js")
+      .then(registration => {
+
+        console.log(
+          "Basic Planner service worker registered:",
+          registration.scope
+        );
+
+      })
+      .catch(error => {
+
+        console.error(
+          "Service worker registration failed:",
+          error
+        );
+
+      });
+
+  });
+
+}
+
 }
