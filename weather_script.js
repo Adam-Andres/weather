@@ -8,7 +8,7 @@
    CONFIGURATION
 ------------------------------------------------------------ */
 
-const CLIENT_ID = "YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com";
+const CLIENT_ID = "447137088453-s4fkui7elp95qt77i6fl92ctpi5bv1qm.apps.googleusercontent.com";
 
 const DISCOVERY_DOC =
   "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest";
